@@ -51,7 +51,7 @@ function render() {
     card.innerHTML = '<div class="card-art"><span class="card-number"></span><span class="dish" aria-hidden="true"></span></div><div class="card-content"><div class="card-top"><h3></h3><span class="rating"></span></div><div class="card-bottom"><span class="tag"></span><span class="card-mark" aria-hidden="true">✳</span></div></div>';
     card.style.setProperty('--card-color', palette[i % palette.length]);
     const cat = (r.category || '').toLowerCase();
-    const emoji = /pizza/.test(cat) ? '🍕' : /burger|hamb/.test(cat) ? '🍔' : /japon|sushi/.test(cat) ? '🍣' : /pão|padar/.test(cat) ? '🥐' : /dog/.test(cat) ? '🌭' : /saud|veg/.test(cat) ? '🥗' : '🍽️';
+    const emoji = /pizza/.test(cat) ? '🍕' : /burger|hamb/.test(cat) ? '🍔' : /japon|sushi/.test(cat) ? '🍣' : /pão|padar/.test(cat) ? '🥐' : /dog/.test(cat) ? '🌭' : /saud|veg/.test(cat) ? '🥗' : /churras/.test(cat) ? '🥩' : /italian/.test(cat) ? '🍝' : /mexic/.test(cat) ? '🌮' : /frutos/.test(cat) ? '🦐' : /doces/.test(cat) ? '🍰' : /cafet/.test(cat) ? '☕' : /árabe/.test(cat) ? '🧆' : /brasileir/.test(cat) ? '🍛' : '🍽️';
     card.querySelector('.dish').textContent = emoji;
     card.querySelector('.card-number').textContent = 'DESCOBERTA ' + String(i + 1).padStart(2, '0');
     card.querySelector('h3').textContent = r.name;

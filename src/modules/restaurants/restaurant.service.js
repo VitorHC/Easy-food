@@ -1,21 +1,13 @@
 const prisma = require("../../database/prisma");
 
-async function  listRestaurants(data) {
-    return prisma.restaurant.findMany();
+function listRestaurants() {
+  return prisma.restaurant.findMany();
 }
 
-async function createRestaurant(data) {
-    return prisma.restaurant.create({
-        data: {
-         name: data.name,
-         category: data.category,
-         rating: data.rating || 0    
-        }
-    });
-    
+function createRestaurant({ name, category, rating = 0 }) {
+  return prisma.restaurant.create({
+    data: { name, category, rating }
+  });
 }
 
-module.exports = {
-    listRestaurants,
-    createRestaurant
-};
+module.exports = { listRestaurants, createRestaurant };

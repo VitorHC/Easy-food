@@ -22,10 +22,27 @@ async function stop(){if(child&&child.exitCode===null){const done=once(child,"ex
   assert.equal((await request("/auth/register",{name:"Teste",email,password})).status,409);
   assert.equal((await request("/auth/login",{email,password:"incorreta"})).status,401);
   r=await request("/auth/login",{email,password});assert.equal(r.status,200);const token=r.data.token;
+  const jwt = require("jsonwebtoken");
+  const claims = jwt.verify(token, process.env.JWT_SECRET);
+  assert.equal(claims.sub, userId);
+  assert.equal(claims.exp - claims.iat, 86400);
+  assert.equal(claims.password, undefined);
+  assert.equal(r.data.user.password, undefined);
   assert.equal((await request("/auth/me",null,token)).data.user.name,"Teste temporário");
+  const parts = token.split(".");
+  const altered = [parts[0], Buffer.from(JSON.stringify({...claims, sub:userId+1})).toString("base64url"), parts[2]].join(".");
+  const expired = jwt.sign({sub:userId,email},process.env.JWT_SECRET,{expiresIn:-1});
+  const wrongKey = jwt.sign({sub:userId,email},"different-test-key",{expiresIn:"1h"});
+  for (const invalid of [undefined, "invalid-token", altered, expired, wrongKey]) {
+    assert.equal((await request("/auth/me",null,invalid)).status,401);
+    assert.equal((await request("/restaurants",{},invalid)).status,401);
+  }
+  console.log("PASS: JWT assinado, expiração de 24h, ausência de senha, rejeição de token ausente, malformado, adulterado, expirado e assinado com outra chave.");
   r=await request("/restaurants",{name:"Teste persistência "+email,category:"Teste",rating:4.3},token);assert.equal(r.status,201);restaurantId=r.data.id;
   await stop();base=await start();
   r=await request("/restaurants");assert.equal(r.status,200);assert.ok(r.data.some(x=>x.id===restaurantId));
+  assert.equal((await request("/auth/me",null,token)).status,200);
+  console.log("PASS: token continua válido após reiniciar com a mesma chave.");
   console.log("PASS: cadastro, duplicidade, senha incorreta, login, sessão, POST autenticado e persistência após reiniciar o processo.");
  }finally{
   await stop();

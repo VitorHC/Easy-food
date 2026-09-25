@@ -6,7 +6,7 @@ Projeto acadêmico de catálogo de restaurantes com Express, PostgreSQL, Prisma 
 2. Execute `npm ci`.
 3. Copie `.env.example` para `.env` apenas se ainda não existir e configure DATABASE_URL e JWT_SECRET. Para gerar uma chave: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
 4. Execute `npm run db:generate` e `npm run db:migrate`.
-5. Opcionalmente execute `npm run db:seed` uma vez para inserir exemplos (repetir pode duplicar dados).
+5. Opcionalmente execute `npm run db:seed` para inserir restaurantes fictícios. O script preserva os existentes e ignora exemplos já presentes com o mesmo nome e categoria.
 6. Execute `npm start` e abra http://localhost:3000.
 
 Não execute prisma init novamente: o projeto já possui schema e migrations. A versão Prisma 6 está alinhada ao formato atual do schema.

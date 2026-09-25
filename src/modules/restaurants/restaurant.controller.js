@@ -1,41 +1,29 @@
 const restaurantService = require("./restaurant.service");
+const { validateRestaurant } = require("./restaurant.validation");
 
-async function  list(req, res) {
-    try {
-    const restaurantes = await restaurantService.listRestaurants();
-    res.json(restaurantes);
+async function list(req, res) {
+  try {
+    const restaurants = await restaurantService.listRestaurants();
+    return res.json(restaurants);
   } catch (error) {
-    console.error("Erro ao buscar restaurantes:", error.message);
-    res.status(500).json({ error: "Erro interno do servidor" });
+    console.error("Falha na consulta de restaurantes:", error.message);
+    return res.status(500).json({ error: "Não foi possível consultar os restaurantes." });
   }
-    
 }
 
-
-async function create(req,res) {
-    const { name, category, rating = 0 } = req.body || {};
-
-  if (typeof name !== "string" || !name.trim() || name.trim().length > 150 || typeof category !== "string" || !category.trim() || category.trim().length > 100) {
-    return res.status(400).json({ error: "Nome e categoria sÃ£o obrigatÃ³rios" });
-  }
-
-  if (typeof rating !== "number" || !Number.isFinite(rating) || rating < 0 || rating > 5) {
-    return res.status(400).json({ error: "A avaliação deve ser um número entre 0 e 5" });
+async function create(req, res) {
+  const result = validateRestaurant(req.body);
+  if (result.error) {
+    return res.status(400).json({ error: result.error });
   }
 
   try {
-    const restaurant = await restaurantService.createRestaurant({
-      name: name.trim(),
-      category: category.trim(),
-      rating: rating || 0
-    });
-
-    res.status(201).json(restaurant);
+    const restaurant = await restaurantService.createRestaurant(result.data);
+    return res.status(201).json(restaurant);
   } catch (error) {
-    console.error("Erro ao cadastrar restaurante:", error.message);
-    res.status(500).json({ error: "Erro interno do servidor" });
+    console.error("Falha no cadastro de restaurante:", error.message);
+    return res.status(500).json({ error: "Não foi possível cadastrar o restaurante." });
   }
-    
 }
 
-module.exports = {list, create};
+module.exports = { list, create };
