@@ -8,11 +8,11 @@ let user = null;
 
 function message(id, text) { $(id).textContent = text; }
 function toast(text) { message('toast', text); $('toast').hidden = false; clearTimeout(toast.timer); toast.timer = setTimeout(() => $('toast').hidden = true, 4500); }
-function account() { $('account-button').textContent = user ? 'Sair · ' + user.name.split(' ')[0] : 'Entrar ↗'; }
-function logout() { token = null; user = null; sessionStorage.removeItem('easyfood-token'); account(); }
+function account() { $('profile-button').hidden = !user; $('account-button').textContent = user ? 'Sair · ' + user.name.split(' ')[0] : 'Entrar ↗'; }
+function logout() { if ($('menu-dialog').open) $('menu-dialog').close(); if ($('profile-dialog').open) $('profile-dialog').close(); token = null; user = null; sessionStorage.removeItem('easyfood-token'); account(); }
 async function request(path, options = {}) {
-  const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...options.headers } });
-  const data = await response.json();
+  const response = await fetch(path, { ...options, headers: { ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), ...(token ? { Authorization: 'Bearer ' + token } : {}), ...options.headers } });
+  const data = response.status === 204 ? null : await response.json();
   if (!response.ok) {
     if (response.status === 401 && token) logout();
     throw new Error(data.error || 'Não foi possível concluir. Tente novamente.');
@@ -57,6 +57,8 @@ function render() {
     card.querySelector('h3').textContent = r.name;
     card.querySelector('.tag').textContent = r.category || 'Outros sabores';
     card.querySelector('.rating').textContent = r.rating == null ? 'Sem nota' : '★ ' + Number(r.rating).toFixed(1).replace('.', ',');
+    const menuButton = document.createElement('button'); menuButton.type = 'button'; menuButton.className = 'text-button menu-button'; menuButton.textContent = 'Ver cardápio →'; menuButton.onclick = () => openMenu(r);
+    card.querySelector('.card-content').append(menuButton);
     list.append(card);
   });
   $('load-more').hidden = filtered.length <= limit;
@@ -129,4 +131,72 @@ async function init() {
   }
   account(); await loadRestaurants();
 }
+let selectedRestaurant = null;
+let menuVersion = 0;
+function canManageMenu() { return user && selectedRestaurant && selectedRestaurant.ownerId === user.id; }
+function resetDishForm() { $('dish-form').reset(); $('dish-form').hidden = true; message('dish-message', ''); }
+async function openMenu(restaurant) {
+  selectedRestaurant = restaurant;
+  $('menu-title').textContent = 'Cardápio · ' + restaurant.name;
+  resetDishForm();
+  $('menu-dialog').showModal();
+  await loadMenu();
+}
+async function loadMenu() {
+  const version = ++menuVersion;
+  message('menu-message', '');
+  $('new-dish').hidden = !canManageMenu();
+  $('dish-list').replaceChildren();
+  try {
+    const dishes = await request('/restaurants/' + selectedRestaurant.id + '/dishes');
+    if (version !== menuVersion || !$('menu-dialog').open) return;
+    if (!dishes.length) message('menu-message', 'Este restaurante ainda não tem pratos cadastrados.');
+    for (const dish of dishes) {
+      const card = document.createElement('article'); card.className = 'menu-item';
+      if (dish.imageUrl) { const img = document.createElement('img'); img.src = dish.imageUrl; img.alt = dish.name; img.loading = 'lazy'; card.append(img); }
+      const title = document.createElement('h3'); title.textContent = dish.name;
+      const info = document.createElement('p'); info.textContent = dish.category + ' · ' + Number(dish.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const description = document.createElement('p'); description.textContent = dish.description;
+      card.append(title, info, description);
+      if (canManageMenu()) {
+        const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'text-button'; edit.textContent = 'Editar';
+        edit.onclick = () => { const form = $('dish-form'); form.hidden = false; for (const field of ['id','name','category','description','price']) form.elements[field].value = dish[field]; $('dish-form-title').textContent = 'Editar prato'; message('dish-message', ''); form.elements.name.focus(); };
+        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'text-button'; remove.textContent = 'Excluir';
+        remove.onclick = async () => { if (!confirm('Excluir o prato ' + dish.name + '?')) return; remove.disabled = true; try { await request('/dishes/' + dish.id, { method: 'DELETE' }); resetDishForm(); await loadMenu(); } catch (error) { message('menu-message', error.message); } finally { remove.disabled = false; } };
+        const uploadForm = document.createElement('form'); const label = document.createElement('label'); label.textContent = 'Foto do prato';
+        const input = document.createElement('input'); input.type = 'file'; input.name = 'image'; input.accept = 'image/jpeg,image/png,image/webp'; input.required = true;
+        const submit = document.createElement('button'); submit.className = 'button small'; submit.textContent = 'Salvar foto'; label.append(input); uploadForm.append(label, submit);
+        uploadForm.onsubmit = async event => { event.preventDefault(); submit.disabled = true; try { validateImage(input.files[0]); await request('/dishes/' + dish.id + '/image', { method: 'POST', body: new FormData(uploadForm) }); await loadMenu(); } catch (error) { message('menu-message', error.message); } finally { submit.disabled = false; } };
+        card.append(edit, remove, uploadForm);
+      }
+      $('dish-list').append(card);
+    }
+  } catch (error) { message('menu-message', error.message); }
+}
+$('menu-dialog').addEventListener('close', () => { menuVersion++; resetDishForm(); });
+$('new-dish').onclick = () => { resetDishForm(); $('dish-form').hidden = false; $('dish-form-title').textContent = 'Novo prato'; $('dish-form').elements.name.focus(); };
+$('cancel-dish').onclick = resetDishForm;
+$('dish-form').onsubmit = async event => {
+  event.preventDefault(); const form = event.currentTarget; const submit = form.querySelector('button'); submit.disabled = true;
+  const data = new FormData(form); const id = data.get('id');
+  try {
+    await request(id ? '/dishes/' + id : '/restaurants/' + selectedRestaurant.id + '/dishes', { method: id ? 'PUT' : 'POST', body: JSON.stringify({ name: data.get('name'), category: data.get('category'), description: data.get('description'), price: Number(data.get('price')) }) });
+    resetDishForm(); await loadMenu(); toast('Prato salvo. Você já pode adicionar uma foto.');
+  } catch (error) { message('dish-message', error.message); } finally { submit.disabled = false; }
+};
+function validateImage(file) {
+  if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('Escolha uma imagem JPEG, PNG ou WebP.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('A imagem deve ter até 5 MB.');
+}
+function renderProfile() {
+  $('profile-name').textContent = user.name + ' · ' + user.email;
+  $('profile-image').hidden = !user.imageUrl;
+  if (user.imageUrl) $('profile-image').src = user.imageUrl; else $('profile-image').removeAttribute('src');
+}
+$('profile-button').onclick = () => { if (!user) return; renderProfile(); message('profile-message', ''); $('profile-form').reset(); $('profile-dialog').showModal(); };
+$('profile-form').onsubmit = async event => {
+  event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('button'); button.disabled = true;
+  try { validateImage(form.elements.image.files[0]); const result = await request('/auth/me/image', { method: 'POST', body: new FormData(form) }); user = result.user; renderProfile(); form.reset(); message('profile-message', 'Foto atualizada.'); }
+  catch (error) { message('profile-message', error.message); } finally { button.disabled = false; }
+};
 init();
