@@ -7,7 +7,7 @@ const prisma = require("../src/database/prisma");
 let child, userId, restaurantId;
 async function start() {
  const socket=net.createServer();socket.listen(0,"127.0.0.1");await once(socket,"listening");const port=socket.address().port;await new Promise(r=>socket.close(r));
- child=spawn(process.execPath,["server.js"],{cwd:require("node:path").join(__dirname,".."),env:{...process.env,PORT:String(port)},stdio:["ignore","pipe","pipe"],windowsHide:true});
+ child=spawn(process.execPath,["server.js"],{cwd:require("node:path").join(__dirname,".."),env:{...process.env,PORT:String(port),EMAIL_API_KEY:"",EMAIL_COMMERCIAL_TO:""},stdio:["ignore","pipe","pipe"],windowsHide:true});
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error("Servidor não iniciou")),10000);child.stdout.on("data",b=>{if(b.toString().includes("rodando")){clearTimeout(timer);resolve();}});child.once("exit",()=>{clearTimeout(timer);reject(new Error("Servidor encerrou"));});});
  return "http://127.0.0.1:"+port;
 }
@@ -46,6 +46,7 @@ async function stop(){if(child&&child.exitCode===null){const done=once(child,"ex
   console.log("PASS: cadastro, duplicidade, senha incorreta, login, sessão, POST autenticado e persistência após reiniciar o processo.");
  }finally{
   await stop();
+  if(restaurantId)await prisma.activity.deleteMany({where:{action:"RESTAURANT_CREATED",details:{endsWith:`ID: ${restaurantId}`}}});
   if(restaurantId)await prisma.restaurant.delete({where:{id:restaurantId}});
   if(userId)await prisma.user.delete({where:{id:userId}});
   await prisma.$disconnect();

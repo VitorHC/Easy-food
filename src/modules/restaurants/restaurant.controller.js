@@ -18,7 +18,7 @@ async function create(req, res) {
   }
 
   try {
-    const restaurant = await restaurantService.createRestaurant(result.data);
+    const restaurant = await restaurantService.createRestaurant(result.data, req.user);
     return res.status(201).json(restaurant);
   } catch (error) {
     console.error("Falha no cadastro de restaurante:", error.message);

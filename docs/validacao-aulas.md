@@ -50,3 +50,6 @@ npm test, npm run test:integration e npm run test:dishes passaram. A migration a
 Os sete materiais pedem schema, migrations, implementação, testes e registros de decisões. Não foi encontrada exigência de enviar dump ou diretório de dados do PostgreSQL no Git. Versionar schema, migrations e seed permite recriar o banco. Credenciais e imagens enviadas ficam fora do Git. Os arquivos em uploads precisam de armazenamento/backup próprio caso seja necessário preservar as imagens em outra instalação.
 
 As observações manuais do Prisma Studio e a apresentação pessoal das decisões continuam sendo atividades do aluno; testes automatizados não substituem essa demonstração.
+
+## Atualização após comparação com o repositório correto
+As diferenças de CRUD, categoria, proprietário e registros de atividade foram implementadas. A interface agora inclui cardápio e uploads. Boas-vindas usa o e-mail do JWT, substituindo EMAIL_TEST_TO. Consulte [a validação atual](atividade-8.md) para o estado final e o roteiro de teste. As descrições anteriores registram a etapa inicial.
