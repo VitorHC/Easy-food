@@ -1,5 +1,13 @@
 # EasyFood
 
+## Atividade 8 — Foto de perfil
+
+Envie `POST /auth/me/image` com `Authorization: Bearer <token>` e arquivo multipart no campo `image`. O usuário é identificado pelo JWT. Aceita JPEG, PNG e WebP até 5 MB e retorna `{ "user": { "id": 1, "name": "...", "email": "...", "imageUrl": "/uploads/profiles/arquivo.webp" } }`.
+
+Consulte a foto em `GET /auth/me` ou na resposta do login e abra a URL no host da aplicação. Perfis e pratos reutilizam Sharp; uma falha preserva a imagem anterior. Aplique as migrations com `npm run db:migrate` e valide com `npm run test:profile`.
+
+Veja o [roteiro e a validação da atividade 8](docs/atividade-8.md), incluindo a limitação da comparação com o repositório informado.
+
 Projeto acadêmico de catálogo de restaurantes com busca, filtros por categoria e cadastro de restaurantes para usuários autenticados. Os dados ficam salvos no PostgreSQL e permanecem após reiniciar o servidor.
 
 ## Tecnologias
@@ -131,12 +139,30 @@ O teste de integração exige o banco do `.env`. Ele cria dados temporários e r
 
 O repositório inclui os arquivos para recriar o banco: `prisma/schema.prisma`, `prisma/migrations/` e `prisma/seed.js`. Quem baixar o projeto configura seu próprio PostgreSQL e segue os passos de instalação acima.
 
-Pelas orientações disponíveis em `docs/atividade.md`, devem ser mantidos o `package-lock.json` e as migrations. Essa documentação não exige um backup com os dados do banco. Caso o enunciado do professor peça um dump ou exportação, essa entrega precisa ser preparada separadamente.
+Pelas orientações disponíveis em `docs/atividade.md`, devem ser mantidos o `package-lock.json` e as migrations. A revisão dos sete materiais da aula também não encontrou exigência de backup com os dados do banco. Caso o enunciado do professor peça um dump ou exportação, essa entrega precisa ser preparada separadamente.
 
 - **Incluir no Git:** código, documentação, `package.json`, `package-lock.json`, `.env.example`, schema, migrations e seed.
 - **Não incluir:** `.env` com credenciais, `node_modules/` e dados reais de usuários. O `.gitignore` já ignora `.env` e `node_modules/`.
 
 Antes de entregar, execute os testes, demonstre o cadastro e a consulta de restaurantes, confira as tabelas no Prisma Studio e revise as justificativas das decisões arquiteturais.
+
+## E-mail e cardápio (atividades 6 e 7)
+
+O cadastro de restaurante pode enviar boas-vindas e uma notificação comercial pela API Resend. Configure no `.env` as variáveis `EMAIL_API_KEY`, `EMAIL_FROM` (remetente verificado), `EMAIL_FROM_NAME`, `EMAIL_TEST_TO` e `EMAIL_COMMERCIAL_TO`, disponíveis no `.env.example`. Destinatários vazios desativam notificações; falhas de envio preservam o cadastro. O envio real exige uma conta e credenciais próprias do provedor.
+
+| Método | Rota | Acesso |
+|---|---|---|
+| GET | `/restaurants/:restaurantId/dishes` | Público |
+| POST | `/restaurants/:restaurantId/dishes` | Bearer JWT |
+| POST | `/dishes/:dishId/image` | Bearer JWT |
+
+Para cadastrar um prato, envie JSON como `{"name":"Pizza Margherita","description":"Tomate e queijo","price":49.90}`. O restaurante deve existir; o preço deve ser positivo e ter até duas casas decimais.
+
+Para enviar uma imagem, use `multipart/form-data` com o arquivo no campo `image`, deixando o cliente gerar o `Content-Type` com o boundary. São aceitos JPEG, PNG e WebP de até 5 MB. A API corrige orientação, reduz a largura para até 800 pixels e salva em WebP. O caminho retornado em `imageUrl` pode ser aberto pelo navegador. Falhas no upload preservam o prato e permitem tentar novamente.
+
+Execute `npm run test:dishes` para testar pratos, imagens e falhas de notificação com dados temporários no banco do `.env`. Esse teste simula o envio de e-mails. A interface atual cobre restaurantes e autenticação; os endpoints de cardápio da aula podem ser usados pelo Postman ou outro cliente HTTP.
+
+Veja a [validação das sete atividades](docs/validacao-aulas.md) e o [ADR de processamento de imagens](docs/adr/ADR-004-processamento-de-imagens.md). Imagens em `uploads/dishes/` não são versionadas; preserve essa pasta separadamente ao transportar dados de uma instalação.
 
 ## Limites do exercício
 

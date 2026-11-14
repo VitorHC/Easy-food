@@ -9,7 +9,9 @@
     "db:generate": "prisma generate",
     "test:integration": "node scripts/check-integration.js",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "node prisma/seed.js"
+    "db:seed": "node prisma/seed.js",
+    "test:dishes": "node scripts/check-dishes-integration.js",
+    "test:profile": "node scripts/check-profile-integration.js"
   },
   "repository": {
     "type": "git",
@@ -29,7 +31,9 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.3",
     "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.5.0",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "prisma": "^6.19.3"
