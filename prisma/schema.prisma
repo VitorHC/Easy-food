@@ -11,6 +11,7 @@ datasource db {
 }
 
 model Restaurant {
+  dishes   Dish[]
   id       Int      @id @default(autoincrement())
   name     String   @db.VarChar(150)
   category String?  @db.VarChar(100)
@@ -18,8 +19,21 @@ model Restaurant {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  name     String @db.VarChar(150)
-  email    String @unique @db.VarChar(150)
-  password String @db.VarChar(255)
+  imageUrl String?
+  id       Int     @id @default(autoincrement())
+  name     String  @db.VarChar(150)
+  email    String  @unique @db.VarChar(150)
+  password String  @db.VarChar(255)
+}
+
+model Dish {
+  id           Int        @id @default(autoincrement())
+  name         String
+  description  String
+  price        Decimal    @db.Decimal(10, 2)
+  imageUrl     String?
+  restaurantId Int
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@index([restaurantId])
 }
