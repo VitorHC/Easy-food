@@ -9,16 +9,16 @@ Materiais consultados: [pasta compartilhada](https://drive.google.com/drive/fold
 | 3 | PostgreSQL, Prisma, seed, migrations, persistência e ADR | Já implementados; teste de persistência após reiniciar passou |
 | 4 | Database, Service, Controller, Routes e decisão de autenticação | Já implementados; ADR-003 registra JWT e alternativas |
 | 5 | Registro, hash de senha, login, JWT, /auth/me e POST protegido | Já implementados; testes de autenticação passaram |
-| 6 | Serviço genérico de e-mail, dois conteúdos e falha secundária isolada | Implementado com API Resend; integração HTTP testada com simulação, credenciais e entrega real pendentes |
+| 6 | Serviço genérico de e-mail, dois conteúdos e falha secundária isolada | Implementado com API MailerSend; integração HTTP testada com simulação, credenciais e entrega real pendentes |
 | 7 | Dish, relação 1:N, cadastro/consulta, upload, otimização e ADR | Implementados; migration aplicada e integração com PostgreSQL/Sharp validada |
 
 ## Atividade 6
 
 O serviço shared/email.service.js expõe sendEmail com destinatário, nome, assunto, header, body e footer. O HTML escapa textos para que nomes de restaurantes não sejam interpretados como marcação. O cadastro grava primeiro e depois tenta as notificações de boas-vindas e comercial, separadamente. Uma falha não impede o retorno 201 nem desfaz a gravação.
 
-Configurar no .env: EMAIL_API_KEY, EMAIL_FROM (remetente verificado no Resend), EMAIL_FROM_NAME, EMAIL_TEST_TO e EMAIL_COMMERCIAL_TO. Destinatário vazio desativa a respectiva notificação. Não foram criadas contas externas nem enviadas mensagens reais durante esta validação. Para concluir a etapa externa da aula, fornecer credenciais válidas e confirmar o recebimento em um endereço de teste autorizado.
+Configurar no .env: MAILER_API, DOMAIN_MAIL (domínio autorizado no MailerSend), MAILER_FROM (opcional), EMAIL_FROM_NAME, EMAIL_TO e EMAIL_COMMERCIAL_TO. Destinatário vazio desativa a respectiva notificação. Não foram criadas contas externas nem enviadas mensagens reais durante esta validação. Para concluir a etapa externa da aula, fornecer credenciais válidas e confirmar o recebimento em um endereço de teste autorizado.
 
-Documentação técnica: [envio pela API Resend](https://resend.com/docs/api-reference/emails/send-email).
+Documentação técnica: [envio pela API MailerSend](https://developers.mailersend.com/api/v1/email).
 
 ## Atividade 7
 
@@ -50,3 +50,6 @@ npm test, npm run test:integration e npm run test:dishes passaram. A migration a
 Os sete materiais pedem schema, migrations, implementação, testes e registros de decisões. Não foi encontrada exigência de enviar dump ou diretório de dados do PostgreSQL no Git. Versionar schema, migrations e seed permite recriar o banco. Credenciais e imagens enviadas ficam fora do Git. Os arquivos em uploads precisam de armazenamento/backup próprio caso seja necessário preservar as imagens em outra instalação.
 
 As observações manuais do Prisma Studio e a apresentação pessoal das decisões continuam sendo atividades do aluno; testes automatizados não substituem essa demonstração.
+
+## Migração para MailerSend
+O serviço passou a usar o SDK oficial MailerSend, como no professor. EMAIL_TO escolhe o destinatário de boas-vindas independentemente do login; EMAIL_COMMERCIAL_TO escolhe o segundo destinatário. Configurações antigas do Resend foram removidas do exemplo. Os testes interceptam a chamada HTTP do SDK, verificam o destinatário, remetente, aceite 202, falhas de validação, indisponibilidade e ocultação de credenciais. Nenhum e-mail real é enviado pelos testes. A validação real depende de chave, remetente autorizado e condições da conta no MailerSend.

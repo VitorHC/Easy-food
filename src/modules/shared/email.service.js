@@ -1,3 +1,5 @@
+const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend");
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[char]));
 }
@@ -7,20 +9,33 @@ function buildHtml({ header, body, footer }) {
 }
 
 async function sendEmail({ to, toName, subject, header, body, footer }) {
-  const { EMAIL_API_KEY, EMAIL_FROM, EMAIL_FROM_NAME = "EasyFood" } = process.env;
-  if (!EMAIL_API_KEY || !EMAIL_FROM || !to) throw new Error("Envio de e-mail não configurado");
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${EMAIL_API_KEY}`, "Content-Type": "application/json" },
-    signal: AbortSignal.timeout(10000),
-    body: JSON.stringify({
-      from: `${EMAIL_FROM_NAME} <${EMAIL_FROM}>`, to: [to], subject,
-      html: buildHtml({ header, body, footer }),
-      text: `${header}\n\n${body}\n\n${footer}`
-    })
-  });
-  if (!response.ok) throw new Error(`Provedor de e-mail retornou HTTP ${response.status}`);
-  return response.json();
+  const apiKey = process.env.MAILER_API;
+  const domain = process.env.DOMAIN_MAIL?.trim();
+  const from = process.env.MAILER_FROM?.trim() || (domain ? `no-reply@${domain}` : "");
+  if (!apiKey || !from || !to) throw new Error("MailerSend não configurado: informe MAILER_API, DOMAIN_MAIL ou MAILER_FROM e destinatário");
+  const sender = new Sender(from, process.env.EMAIL_FROM_NAME || "EasyFood");
+  const params = new EmailParams()
+    .setFrom(sender)
+    .setTo([new Recipient(to, toName || to)])
+    .setReplyTo(sender)
+    .setSubject(subject)
+    .setHtml(buildHtml({ header, body, footer }))
+    .setText(`${header}\n\n${body}\n\n${footer}`);
+  try {
+    const result = await new MailerSend({ apiKey }).email.send(params);
+    return { statusCode: result.statusCode, messageId: result.headers?.["x-message-id"] };
+  } catch (error) {
+    const details = error?.body || error?.response?.data;
+    const messages = details?.errors && typeof details.errors === "object"
+      ? Object.values(details.errors).flat().filter(value => typeof value === "string") : [];
+    let reason = [details?.message, ...messages, !details ? error?.message : ""]
+      .filter(value => typeof value === "string").join("; ");
+    reason = reason.split(apiKey).join("<REDACTED>")
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "<EMAIL>")
+      .replace(/[\r\n\x00-\x1f]/g, " ").slice(0, 600);
+    const status = error?.statusCode || error?.response?.status;
+    throw new Error(`MailerSend recusou o envio${status ? ` (HTTP ${status})` : ""}${reason ? ": " + reason : ""}`);
+  }
 }
 
 module.exports = { sendEmail, buildHtml };

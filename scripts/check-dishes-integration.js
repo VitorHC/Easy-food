@@ -18,11 +18,11 @@ const app = require("../src/app");
   const authorization = `Bearer ${token}`;
   let restaurantId, dishId, imageUrl;
   const originalSend = emailService.sendEmail;
-  const originalTestTo = process.env.EMAIL_TEST_TO;
+  const originalTestTo = process.env.EMAIL_TO;
   const originalCommercialTo = process.env.EMAIL_COMMERCIAL_TO;
   const notices = [];
   emailService.sendEmail = async message => { notices.push(message); throw new Error("Falha simulada"); };
-  process.env.EMAIL_TEST_TO = "test@example.test";
+  process.env.EMAIL_TO = "test@example.test";
   process.env.EMAIL_COMMERCIAL_TO = "commercial@example.test";
   async function post(url, data, authenticated = true) {
     return fetch(base + url, { method: "POST", headers: { "Content-Type": "application/json", ...(authenticated ? { authorization } : {}) }, body: JSON.stringify(data) });
@@ -74,7 +74,7 @@ const app = require("../src/app");
     console.log("PASS: duas notificações com falha preservam cadastro; pratos, JWT, validação, consulta, imagem pública, substituição e falhas de upload.");
   } finally {
     emailService.sendEmail = originalSend;
-    for (const [key, value] of [["EMAIL_TEST_TO", originalTestTo], ["EMAIL_COMMERCIAL_TO", originalCommercialTo]]) {
+    for (const [key, value] of [["EMAIL_TO", originalTestTo], ["EMAIL_COMMERCIAL_TO", originalCommercialTo]]) {
       if (value === undefined) delete process.env[key]; else process.env[key] = value;
     }
     await new Promise(resolve => server.close(resolve));

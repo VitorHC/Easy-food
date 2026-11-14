@@ -148,7 +148,24 @@ Antes de entregar, execute os testes, demonstre o cadastro e a consulta de resta
 
 ## E-mail e cardápio (atividades 6 e 7)
 
-O cadastro de restaurante pode enviar boas-vindas e uma notificação comercial pela API Resend. Configure no `.env` as variáveis `EMAIL_API_KEY`, `EMAIL_FROM` (remetente verificado), `EMAIL_FROM_NAME`, `EMAIL_TEST_TO` e `EMAIL_COMMERCIAL_TO`, disponíveis no `.env.example`. Destinatários vazios desativam notificações; falhas de envio preservam o cadastro. O envio real exige uma conta e credenciais próprias do provedor.
+O cadastro de restaurante dispara notificações pelo **MailerSend**, usando o SDK oficial e as variáveis de chave/domínio do professor. O destinatário é escolhido no `.env`, independente do usuário logado:
+
+```dotenv
+MAILER_API="sua-chave-do-mailersend"
+DOMAIN_MAIL="seu-dominio-autorizado"
+MAILER_FROM=""
+EMAIL_FROM_NAME="EasyFood"
+EMAIL_TO="destinatario-escolhido@exemplo.com"
+EMAIL_COMMERCIAL_TO=""
+```
+
+`MAILER_FROM` vazio usa `no-reply@DOMAIN_MAIL`, como no professor. Para outro endereço remetente autorizado, preencha `MAILER_FROM` com o endereço completo. `EMAIL_TO` recebe boas-vindas; `EMAIL_COMMERCIAL_TO` recebe o segundo aviso. Deixe um destinatário vazio para desativar somente essa notificação. Não há exigência no código de que o destinatário seja o usuário logado ou a conta do provedor.
+
+Crie a chave no MailerSend e configure um domínio ou identidade de remetente autorizada conforme sua conta. Contas/domínios de teste podem ter limites de destinatários impostos pelo provedor. Escolher um e-mail no projeto não remove essas restrições. Chaves e remetentes do Resend não são usados. Reinicie `npm start` após salvar o `.env`.
+
+Os envios acontecem após salvar um restaurante. Uma falha não desfaz o cadastro. O aceite HTTP 202 significa que o MailerSend recebeu a solicitação; confirme a entrega na caixa de entrada ou no painel do provedor. Nunca versione o `.env`.
+
+Documentação: [MailerSend — envio de e-mail](https://developers.mailersend.com/api/v1/email).
 
 | Método | Rota | Acesso |
 |---|---|---|
