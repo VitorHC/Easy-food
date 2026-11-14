@@ -1,50 +1,55 @@
-# Atividade 8 — Evoluindo a EasyFood
+# Atividade 8 — Implementação e validação
 
-## Comparação com o repositório informado
+## Referência e correção analisada
 
-O endereço enviado foi normalizado para https://github.com/VitorHC/Easy-food.git. Em 13/11/2026, o HEAD remoto era 477a8b1ac4264868be00317e7c7a5cc06a53a842, igual ao HEAD local antes das implementações. Essa revisão não contém o módulo dishes. A identificação dos arquivos e da causa do bug específico do professor depende do endereço ou commit que contém sua correção.
+Base: [FelipeDiasR/easy-food](https://github.com/FelipeDiasR/easy-food), commit [70e459e — fix at creat menu](https://github.com/FelipeDiasR/easy-food/commit/70e459efbdc880815f131ebe3e4c92e39efb6270).
 
-O cadastro local foi validado: a rota chama o controller, que valida restaurantId, nome, descrição e preço. O service verifica o restaurante e grava restaurantId como chave estrangeira. O teste confirma 201, persistência no PostgreSQL e vínculo com o restaurante solicitado. Isso comprova o comportamento local, sem substituir a comparação histórica pedida.
+Antes da correção, dish.service.js exigia imageUrl no corpo do cadastro, embora o fluxo fosse criar o prato e enviar a imagem depois. O professor removeu essa exigência e passou a gravar uma string vazia. Aqui imageUrl é opcional e começa como null, permitindo cadastrar sem imagem e fazer upload depois.
 
-## Implementação
+O commit altera seis arquivos: schema Prisma, migration de ownerId, controllers e services de pratos e restaurantes. Também passa req.user aos services, grava o proprietário e restringe o gerenciamento do cardápio. Essas responsabilidades foram incorporadas ao projeto local, preservando a validação e o processamento de imagens existentes.
 
-- User.imageUrl opcional, com migration aditiva.
-- POST /auth/me/image exige JWT antes do Multer e recebe arquivo no campo image.
-- O usuário vem exclusivamente de req.user.id, obtido do token; um ID enviado pelo cliente não escolhe o proprietário.
-- Cadastro, login e GET /auth/me retornam imageUrl sem expor senha.
-- Auth e dishes reutilizam image.service.js e upload.middleware.js.
-- Imagens ficam em uploads/profiles ou uploads/dishes, publicadas por /uploads e ignoradas pelo Git.
-- JPEG, PNG e WebP são aceitos até 5 MB. Sharp valida o conteúdo, corrige orientação, limita largura a 800 pixels e converte para WebP com qualidade 80.
-- A foto anterior é removida após salvar o novo caminho. Falha no processamento preserva a foto anterior; falha no banco limpa o arquivo novo.
+## Funcionalidades
 
-## Demonstração
+- Cadastro/login, JWT, consulta pública e cadastro autenticado de restaurantes.
+- Novos restaurantes recebem ownerId do JWT. O cliente não escolhe o proprietário.
+- Pratos possuem nome, categoria, descrição, preço e imagem opcional.
+- POST /restaurants/:restaurantId/dishes cria sem exigir imagem; GET consulta o cardápio.
+- GET /dishes/:dishId consulta um prato; PUT altera e DELETE exclui.
+- Criar, editar, excluir e enviar foto de prato exige JWT e propriedade do restaurante. Outra conta recebe 403.
+- POST /auth/me/image usa apenas o usuário do JWT, nunca um ID escolhido na requisição.
+- Imagens de perfil e pratos reutilizam Multer e image.service.js com Sharp.
+- JPEG/PNG/WebP até 5 MB; limite de decodificação de 40 milhões de pixels, orientação corrigida, largura até 800 pixels sem ampliar, WebP com qualidade 80.
+- URLs ficam no PostgreSQL e arquivos são publicados em /uploads. Substituir/excluir limpa imagens antigas; falhas preservam a operação principal e a foto anterior.
+- Ao cadastrar restaurante: salvar no banco, tentar boas-vindas ao e-mail do usuário, notificar comercial e registrar RESTAURANT_CREATED. Falhas secundárias não desfazem o cadastro.
+- A interface permite consultar cardápio, criar/editar/excluir pratos e enviar imagens. Meu perfil permite atualizar a própria foto.
 
-1. Configure o .env e execute npm ci, npm run db:generate, npm run db:migrate e npm start.
-2. Cadastre uma conta em POST /auth/register e obtenha o token em POST /auth/login.
-3. Use Authorization: Bearer TOKEN nas operações protegidas.
-4. Cadastre um prato em POST /restaurants/ID_EXISTENTE/dishes com JSON: {"name":"Pizza","description":"Tomate e queijo","price":49.90}.
-5. Envie multipart/form-data para POST /auth/me/image com arquivo no campo image. Deixe o cliente gerar o Content-Type com boundary.
-6. Consulte GET /auth/me com o token e abra user.imageUrl no host da aplicação.
-7. Envie arquivo para POST /dishes/ID_DO_PRATO/image. Consulte GET /restaurants/ID_EXISTENTE/dishes e abra imageUrl.
+## Preservação dos dados existentes
 
-A interface visual atual cobre catálogo e autenticação. Os endpoints desta atividade podem ser demonstrados pelo Postman ou outro cliente HTTP.
+A migration adiciona ownerId opcional: restaurantes antigos e exemplos do seed continuam visíveis, sem atribuição arbitrária a uma conta. Somente restaurantes criados pela conta autenticada oferecem gerenciamento do cardápio. Cadastre um restaurante pela interface para demonstrar. Se for preciso transferir um registro antigo a um dono, isso exige uma associação administrativa explícita.
 
-## Verificação
+Categoria dos pratos existentes recebe Outros. Não é preciso apagar o banco. Schema, migrations e seed ficam no Git; .env e uploads ficam fora dele.
 
-npm test, npm run test:profile, npm run test:dishes e npm run test:integration passaram. As migrations foram aplicadas no PostgreSQL local. Os testes removem seus próprios registros e imagens.
+## Roteiro da entrega
 
-O teste de perfil verifica vínculo com o usuário do JWT mesmo com userId de outra conta na query, isolamento entre contas, ausência de senha, caminho no perfil/login, URL pública, WebP otimizado e substituição. Também verifica 401 sem token ou com conta inexistente, 400 sem arquivo ou com conteúdo inválido e 413 acima de 5 MB. Uma falha preserva a foto anterior.
+1. Configure .env, execute npm ci, npm run db:generate e npm run db:migrate.
+2. Execute npm start e abra http://localhost:3000.
+3. Crie uma conta, entre e cadastre um restaurante.
+4. Abra Ver cardápio nesse restaurante e Cadastre um prato, sem imagem inicial.
+5. Use Salvar foto no prato e confirme a imagem na consulta. Edite e exclua um prato para demonstrar o CRUD.
+6. Abra Meu perfil e envie uma foto. Consulte também GET /auth/me com o JWT.
+7. Com outra conta, consulte o cardápio; operações de alteração pela API devem retornar 403.
+8. Teste upload sem JWT (401), arquivo inválido (400), acima de 5 MB (413) e prato inexistente (404).
 
-O teste de pratos confirma cadastro com 201, vínculo com o restaurante, consulta, upload protegido, imagem acessível e 404 para prato inexistente. Os testes anteriores confirmam autenticação e persistência após reiniciar. Não houve envio real de e-mails nestes testes.
+## Testes
 
-## Reflexões arquiteturais
+npm test, npm run test:dishes, npm run test:profile e npm run test:integration verificam API, PostgreSQL, CRUD, propriedade, uploads, consulta de imagens, preservação em falhas e persistência após reinício. Testes de e-mail usam simulação ou credenciais desativadas, sem mensagens reais.
 
-O serviço compartilhado evita duplicar processamento e armazenamento. O Controller recebe HTTP, valida entradas e devolve respostas; o Service coordena as entidades, o processamento e a persistência. As rotas apenas combinam endpoints e middlewares.
+O fluxo foi executado também em Microsoft Edge headless: registro/login, restaurante, prato sem imagem, upload, edição, exclusão e foto de perfil, sem erros JavaScript. Layout inspecionado em desktop e celular.
 
-O JWT autentica antes do upload; usar o ID do token impede escolher livremente outro perfil. A autorização de propriedade dos restaurantes e pratos permanece uma evolução adicional.
+## Reflexões
 
-Falhas de processamento retornam erro e preservam os registros e a imagem anterior. A organização modular permite adicionar funcionalidades com mudanças localizadas.
+O Controller trata HTTP e valida entradas. O Service coordena entidades, autorização, banco e operações secundárias. Rotas combinam middlewares e endpoints, sem processamento de imagens embutido. Reutilizar o serviço centraliza as regras de otimização e armazenamento. Falhar ao enviar imagem ou e-mail preserva o cadastro já concluído. A modularização permite novas funções sem reescrever a aplicação.
 
-## Entrega
+## Configuração externa pendente
 
-Versionar código, documentação, schema e migrations. Credenciais, node_modules e imagens enviadas ficam fora do Git. A análise histórica da correção do professor permanece pendente do endereço correto.
+O Resend atende à liberdade de provedor da atividade 6; o professor exemplifica MailerSend. Entrega real de e-mail depende de EMAIL_API_KEY, EMAIL_FROM verificado e, para o comercial, EMAIL_COMMERCIAL_TO. A chave do MailerSend não funciona no Resend. Não foram criadas credenciais nem enviados e-mails reais nesta validação.

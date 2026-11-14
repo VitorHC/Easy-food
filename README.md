@@ -1,81 +1,46 @@
 # EasyFood
 
-## Atividade 8 — Foto de perfil
+Projeto acadêmico de restaurantes e cardápios com Node.js, Express, PostgreSQL, Prisma e autenticação JWT. Interface em HTML, CSS e JavaScript.
 
-Envie `POST /auth/me/image` com `Authorization: Bearer <token>` e arquivo multipart no campo `image`. O usuário é identificado pelo JWT. Aceita JPEG, PNG e WebP até 5 MB e retorna `{ "user": { "id": 1, "name": "...", "email": "...", "imageUrl": "/uploads/profiles/arquivo.webp" } }`.
+## Executar
 
-Consulte a foto em `GET /auth/me` ou na resposta do login e abra a URL no host da aplicação. Perfis e pratos reutilizam Sharp; uma falha preserva a imagem anterior. Aplique as migrations com `npm run db:migrate` e valide com `npm run test:profile`.
+1. Instale Node.js e PostgreSQL e crie o banco: `CREATE DATABASE easyfood;`.
+2. Execute `npm ci`.
+3. Copie `.env.example` para `.env`, se ainda não existir, e configure `DATABASE_URL` e `JWT_SECRET`.
+4. Execute `npm run db:generate` e `npm run db:migrate`.
+5. Opcionalmente execute `npm run db:seed` para inserir restaurantes fictícios sem apagar os existentes.
+6. Execute `npm start` e abra [http://localhost:3000](http://localhost:3000).
 
-Veja o [roteiro e a validação da atividade 8](docs/atividade-8.md), incluindo a limitação da comparação com o repositório informado.
+Para gerar JWT_SECRET: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
 
-Projeto acadêmico de catálogo de restaurantes com busca, filtros por categoria e cadastro de restaurantes para usuários autenticados. Os dados ficam salvos no PostgreSQL e permanecem após reiniciar o servidor.
+O schema e as migrations já existem; não execute prisma init. O projeto usa Prisma 6. Reinicie o servidor após atualizar o cliente Prisma ou o .env. PORT permite mudar a porta.
 
-## Tecnologias
+## Usar
 
-- **Interface:** HTML, CSS e JavaScript.
-- **Servidor:** Node.js e Express.
-- **Banco de dados:** PostgreSQL e Prisma ORM.
-- **Autenticação:** JWT e bcryptjs para proteger as senhas.
+Consulte e filtre restaurantes sem login e abra **Ver cardápio**. Crie uma conta e cadastre seu restaurante para gerenciar pratos: cadastrar, editar, excluir e enviar fotos. **Meu perfil** permite atualizar sua foto. **Sair** encerra a sessão local da aba.
 
-## Como executar
+Novos restaurantes pertencem à conta que os criou. Outra conta pode consultar, mas não alterar seus pratos. Restaurantes antigos e exemplos do seed permanecem públicos e sem dono atribuído; cadastre um novo para testar o gerenciamento. Não há associação automática desses dados antigos à primeira conta.
 
-Você precisa de Node.js com npm, PostgreSQL instalado e em execução e Git para clonar o projeto.
+Pratos podem ser cadastrados sem imagem. Depois envie JPEG, PNG ou WebP de até 5 MB. A API corrige orientação, reduz para até 800 pixels de largura e salva WebP. Fotos de perfil pertencem ao usuário do JWT. Falhas de upload preservam o registro e a imagem anterior.
 
-### 1. Baixar e instalar
+## E-mail
 
-```bash
-git clone https://github.com/VitorHC/Easy-food.git
-cd Easy-food
-npm ci
-```
+O e-mail é tentado **depois de salvar um restaurante**, não ao criar conta ou prato. Boas-vindas vai ao e-mail de quem cadastrou; a notificação comercial usa EMAIL_COMMERCIAL_TO. O cadastro também registra uma atividade no banco. Falhas secundárias preservam o restaurante.
 
-### 2. Configurar o ambiente
-
-No pgAdmin ou no terminal SQL do PostgreSQL, crie o banco:
-
-```sql
-CREATE DATABASE easyfood;
-```
-
-Copie `.env.example` para `.env`, caso esse arquivo ainda não exista. Configure suas credenciais locais:
+Usamos a [API Resend](https://resend.com/docs/api-reference/emails/send-email), permitida pela atividade. Configure no .env:
 
 ```dotenv
-DATABASE_URL="postgresql://postgres:SENHA@localhost:5432/easyfood"
-JWT_SECRET="substitua-por-uma-chave-aleatoria-longa"
+EMAIL_API_KEY="sua-chave-do-resend"
+EMAIL_FROM="remetente-verificado@seudominio.com"
+EMAIL_FROM_NAME="EasyFood"
+EMAIL_COMMERCIAL_TO="email-do-comercial"
 ```
 
-Substitua `postgres` e `SENHA` pelo usuário e senha do seu PostgreSQL. Para gerar uma chave para `JWT_SECRET`, execute:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-```
-
-### 3. Preparar as tabelas e iniciar
-
-```bash
-npm run db:generate
-npm run db:migrate
-npm run db:seed
-npm start
-```
-
-O seed é opcional: insere restaurantes fictícios, preserva os registros existentes e ignora exemplos com o mesmo nome e categoria. Ele não cria contas de usuário.
-
-Abra [http://localhost:3000](http://localhost:3000). Para usar outra porta, defina `PORT` no `.env`.
-
-O projeto já possui schema e migrations: não execute `prisma init` novamente. As dependências usam Prisma 6.
-
-## Como usar
-
-1. Consulte o catálogo, busque restaurantes e filtre por categoria sem precisar entrar.
-2. Clique em **Cadastrar restaurante** e crie uma conta ou faça login.
-3. Preencha os dados e envie o cadastro.
-4. Use **Sair** para remover o token da sessão local da aba.
-
-As senhas exigem pelo menos 8 caracteres e no máximo 72 bytes.
+Sem credenciais o envio falha com registro no terminal e o cadastro continua funcionando. Comercial vazio desativa essa notificação. Nunca envie .env ao GitHub. O professor usa MailerSend; chaves de um provedor não funcionam no outro.
 
 ## API
 
+<<<<<<< HEAD
 Envie os dados em JSON com `Content-Type: application/json`. Nas rotas protegidas, use `Authorization: Bearer <token>` com o token recebido no login.
 
 | Método | Rota | Função | Acesso |
@@ -166,21 +131,48 @@ Crie a chave no MailerSend e configure um domínio ou identidade de remetente au
 Os envios acontecem após salvar um restaurante. Uma falha não desfaz o cadastro. O aceite HTTP 202 significa que o MailerSend recebeu a solicitação; confirme a entrega na caixa de entrada ou no painel do provedor. Nunca versione o `.env`.
 
 Documentação: [MailerSend — envio de e-mail](https://developers.mailersend.com/api/v1/email).
+=======
+Envie JSON com Content-Type: application/json. Rotas protegidas usam Authorization: Bearer TOKEN.
+>>>>>>> 19ed80166fd21a947dd7279905826d12644088b9
 
 | Método | Rota | Acesso |
 |---|---|---|
-| GET | `/restaurants/:restaurantId/dishes` | Público |
-| POST | `/restaurants/:restaurantId/dishes` | Bearer JWT |
-| POST | `/dishes/:dishId/image` | Bearer JWT |
+| GET | /restaurants | Público |
+| POST | /restaurants | JWT |
+| POST | /auth/register | Público |
+| POST | /auth/login | Público |
+| GET | /auth/me | JWT |
+| POST | /auth/me/image | JWT; próprio perfil |
+| GET | /restaurants/:restaurantId/dishes | Público |
+| POST | /restaurants/:restaurantId/dishes | JWT; proprietário |
+| GET | /dishes/:dishId | Público |
+| PUT | /dishes/:dishId | JWT; proprietário |
+| DELETE | /dishes/:dishId | JWT; proprietário |
+| POST | /dishes/:dishId/image | JWT; proprietário |
 
-Para cadastrar um prato, envie JSON como `{"name":"Pizza Margherita","description":"Tomate e queijo","price":49.90}`. O restaurante deve existir; o preço deve ser positivo e ter até duas casas decimais.
+Restaurante: `{"name":"Cantina Roma","category":"Italiana","rating":4.5}`. Avaliação entre 0 e 5.
 
-Para enviar uma imagem, use `multipart/form-data` com o arquivo no campo `image`, deixando o cliente gerar o `Content-Type` com o boundary. São aceitos JPEG, PNG e WebP de até 5 MB. A API corrige orientação, reduz a largura para até 800 pixels e salva em WebP. O caminho retornado em `imageUrl` pode ser aberto pelo navegador. Falhas no upload preservam o prato e permitem tentar novamente.
+Prato (POST/PUT): `{"name":"Pizza","category":"Pizza","description":"Tomate e queijo","price":49.90}`. Preço numérico não negativo, até duas casas decimais.
 
-Execute `npm run test:dishes` para testar pratos, imagens e falhas de notificação com dados temporários no banco do `.env`. Esse teste simula o envio de e-mails. A interface atual cobre restaurantes e autenticação; os endpoints de cardápio da aula podem ser usados pelo Postman ou outro cliente HTTP.
+Uploads recebem multipart/form-data com arquivo no campo image. Deixe o cliente gerar o Content-Type com boundary. As respostas retornam imageUrl, acessível no host da aplicação. Perfil retorna `{ "user": { ... } }`. Login e consulta de perfil também retornam imageUrl, sem senha.
 
-Veja a [validação das sete atividades](docs/validacao-aulas.md) e o [ADR de processamento de imagens](docs/adr/ADR-004-processamento-de-imagens.md). Imagens em `uploads/dishes/` não são versionadas; preserve essa pasta separadamente ao transportar dados de uma instalação.
+Respostas: 201 criado, 200 consultado/atualizado, 204 excluído, 400 inválido, 401 sem autenticação, 403 sem propriedade, 404 inexistente, 409 e-mail repetido e 413 arquivo grande.
 
-## Limites do exercício
+## Organização e testes
 
-Não inclui recuperação de senha, confirmação de e-mail, revogação de JWT ou limitação de tentativas. Google Fonts é opcional para a aparência; fontes alternativas mantêm a página utilizável sem conexão.
+- public/: interface.
+- src/modules/: auth, restaurants, dishes e shared (imagens, e-mail e atividades).
+- src/database/: cliente Prisma.
+- prisma/: schema, migrations e seed.
+- docs/: acompanhamento e decisões arquiteturais.
+- server.js inicia; src/app.js configura o Express. teste.js é um protótipo antigo.
+
+Execute `npm test`, `npm run test:integration`, `npm run test:dishes` e `npm run test:profile`. Os testes de integração exigem o banco do .env e removem os próprios dados temporários. E-mails são simulados/desativados nesses testes. `npx prisma studio` permite observar as tabelas.
+
+Veja a [atividade 8 e roteiro de demonstração](docs/atividade-8.md), [atividades anteriores](docs/validacao-aulas.md) e [ADRs](docs/adr/).
+
+## Entrega
+
+Versione código, documentação, package-lock.json, .env.example, schema, migrations e seed. Os materiais não exigem dump do PostgreSQL. Quem baixar recria as tabelas com migrations. Não versione .env, node_modules ou imagens enviadas. Preserve uploads separadamente se transportar os dados de uma instalação.
+
+Não inclui recuperação de senha, confirmação de e-mail, revogação de JWT ou limitação de tentativas. O armazenamento local de imagens precisa de volume persistente em hospedagem. O processamento dentro da API é uma escolha para o contexto acadêmico, documentada no ADR-004.
